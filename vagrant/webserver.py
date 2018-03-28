@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs
+from database_setup import Restaurant, create_db_session
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -48,6 +49,37 @@ class Handler(BaseHTTPRequestHandler):
 
                 self.wfile.write(output.encode())
                 return
+
+            if self.path.endswith("/restaurants"):
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                session = create_db_session()
+
+                q = session.query(Restaurant.name).all()
+                sub_html = ''
+
+                for r in q:
+                    sub_html += '''<div>
+                                      {}
+                                      <div>
+                                        <a href="/restaurants">Edit</a>
+                                        <a href="/restaurants">Delete</a>
+                                      </div>
+                                    </div>'''.format(r[0])
+
+                html_wrapper = '''
+                <html>
+                <head><title>Restaurants</title></head>
+                <body>
+                {0}
+                </body>
+                </html>
+                '''
+
+                mesg = html_wrapper.format(sub_html)
+                self.wfile.write(mesg.encode())
 
         except IOError:
             self.send_error(404, 'file not found {}'.format(self.path))
