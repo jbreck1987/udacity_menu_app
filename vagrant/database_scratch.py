@@ -5,7 +5,7 @@ def main():
 
     session = create_db_session()
 
-    q = session.query(Restaurant.name).all()
+    q = session.query(Restaurant.name, Restaurant.Id).all()
 
     print(q)
 

@@ -55,19 +55,21 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
 
+                # create new SQLAlcehmy session
                 session = create_db_session()
 
-                q = session.query(Restaurant.name).all()
+                # query the database and get names of all the restaurants
+                q = session.query(Restaurant.name, Restaurant.Id).all()
                 sub_html = ''
 
                 for r in q:
                     sub_html += '''<div>
-                                      {}
+                                      {0}
                                       <div>
-                                        <a href="/restaurants">Edit</a>
+                                        <a href="/restaurants/{1}/edit">Edit</a>
                                         <a href="/restaurants">Delete</a>
                                       </div>
-                                    </div>'''.format(r[0])
+                                    </div>'''.format(r[0], r[1])
 
                 html_wrapper = '''
                 <html>
