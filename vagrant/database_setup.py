@@ -1,7 +1,7 @@
 import sys
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy import create_engine
 
 
@@ -36,6 +36,10 @@ class MenuItem(Base):
 
 
 # END OF FILE
+# create engine to be used by app modules
 engine = create_engine('sqlite:///restaurantmenu.db')
 
-Base.metadata.create_all(engine)
+
+def create_db_session():
+    Session = sessionmaker(bind=engine)
+    return Session()
