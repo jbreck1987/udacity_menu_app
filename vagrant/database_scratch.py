@@ -5,9 +5,14 @@ def main():
 
     session = create_db_session()
 
-    q = session.query(Restaurant.name, Restaurant.Id).all()
+    # new_rest = Restaurant(name='testy test')
 
-    print(q)
+    # session.add(new_rest)
+
+    q = session.query(Restaurant).filter_by(name='test').first()
+
+    print(q.name)
+    session.close()
 
 
 if __name__ == '__main__':
