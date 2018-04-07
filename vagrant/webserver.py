@@ -1,5 +1,5 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlparse
 from database_setup import Restaurant, create_db_session
 
 
@@ -22,7 +22,7 @@ class Handler(BaseHTTPRequestHandler):
                     sub_html += '''<div>
                                       {0}
                                       <div>
-                                        <a href="/restaurants/{1}/edit">Edit</a>
+                                        <a href="/restaurant/{1}/edit?name={0}&id={1}">Edit</a>
                                         <a href="/restaurants">Delete</a>
                                       </div>
                                     </div>'''.format(r[0], r[1])
@@ -60,6 +60,45 @@ class Handler(BaseHTTPRequestHandler):
 
                 self.wfile.write(output.encode())
 
+            if self.path.find("/edit") != -1:
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                parsed = urlparse(self.path)
+                params = parse_qs(parsed.query)
+
+                # create new SQLAlcehmy session
+                session = create_db_session()
+
+                # query the database and get names of all the restaurants
+                q = session.query(Restaurant).filter(
+                    Restaurant.name == params['name'][0],
+                    Restaurant.Id == params['id'][0]).first()
+                session.close()
+
+                if q is None:
+                    self.send_response(301)
+                    self.send_header('Location', '/restaurants/edit_err')
+                    self.end_headers()
+
+                if q is not None:
+                    output = '''
+                    <html>
+                    <body>
+                    <h1>Edit Restaurant</h1>
+                    <form method="POST" action="/restaurant/{1}/edit?name={0}&id={1}">
+                        <label><h2>Please enter the new name for the restaurant</h2>
+                            <input name="new_name">
+                        </label>
+                        <button type="submit">Submit!</button>
+                    </form>
+                    </body>
+                    </html>
+                    '''.format(params['name'][0], params['id'][0])
+
+                    self.wfile.write(output.encode())
+
             if self.path.endswith("/restaurants/create_err"):
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
@@ -87,6 +126,7 @@ class Handler(BaseHTTPRequestHandler):
                 body = self.rfile.read(length).decode()
                 params = parse_qs(body)
                 print(params)
+                print(self.path)
 
                 # create new SQLAlcehmy session
                 session = create_db_session()
@@ -124,6 +164,40 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_header('Location', '/restaurants/create_err')
                     self.end_headers()
 
+            if self.path.find("/edit"):
+                length = int(self.headers.get('Content-length', 0))
+                body = self.rfile.read(length).decode()
+                body_params = parse_qs(body)
+
+                parsed_path = urlparse(self.path)
+                path_params = parse_qs(parsed_path.query)
+                print(self.path)
+                print(parsed_path.query)
+
+                self.send_response(201)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                session = create_db_session()
+
+                session.query(Restaurant).filter(
+                    Restaurant.name == path_params['name'][0],
+                    Restaurant.Id == path_params['id'][0]).update(
+                    {Restaurant.name: body_params['new_name'][0]},
+                    synchronize_session=False)
+
+                session.commit()
+
+                output = '''
+                <html>
+                <body>
+                <h1>{} was updated!</h1>
+                </body>
+                </html>
+                '''
+
+                self.wfile.write(output.format(
+                    path_params['name'][0]).encode())
         except:
             pass
 
