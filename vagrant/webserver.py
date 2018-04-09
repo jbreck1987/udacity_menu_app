@@ -108,7 +108,7 @@ class Handler(BaseHTTPRequestHandler):
                 parsed = urlparse(self.path)
                 params = parse_qs(parsed.query)
 
-                print("params={}, parsed={}".format(params, parsed))
+                #print("params={}, parsed={}".format(params, parsed))
 
                 #create new SQLAlcehmy session
                 session = create_db_session()
@@ -205,7 +205,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_header('Location', '/restaurants/create_err')
                     self.end_headers()
 
-            if self.path.find("/edit"):
+            if self.path.find("/edit") != -1:
                 length = int(self.headers.get('Content-length', 0))
                 body = self.rfile.read(length).decode()
                 body_params = parse_qs(body)
@@ -233,6 +233,41 @@ class Handler(BaseHTTPRequestHandler):
                 <html>
                 <body>
                 <h1>{} was updated!</h1>
+                </body>
+                </html>
+                '''
+
+                self.wfile.write(output.format(
+                    path_params['name'][0]).encode())
+
+
+            if self.path.find("/delete") != -1:
+                length = int(self.headers.get('Content-length', 0))
+                body = self.rfile.read(length).decode()
+                body_params = parse_qs(body)
+
+                parsed_path = urlparse(self.path)
+                path_params = parse_qs(parsed_path.query)
+                #print('Made it to the POST route!')
+
+                self.send_response(201)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                session = create_db_session()
+
+                session.query(Restaurant).filter(
+                    Restaurant.name == path_params['name'][0],
+                    Restaurant.Id == path_params['id'][0]).delete(
+                    synchronize_session=False)
+
+                session.commit()
+                session.close()
+
+                output = '''
+                <html>
+                <body>
+                <h1>{} was deleted!</h1>
                 </body>
                 </html>
                 '''
