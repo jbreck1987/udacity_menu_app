@@ -23,7 +23,7 @@ class Handler(BaseHTTPRequestHandler):
                                       {0}
                                       <div>
                                         <a href="/restaurant/{1}/edit?name={0}&id={1}">Edit</a>
-                                        <a href="/restaurants">Delete</a>
+                                        <a href="/restaurant/{1}/delete?name={0}&id={1}"">Delete</a>
                                       </div>
                                     </div>'''.format(r[0], r[1])
 
@@ -79,7 +79,7 @@ class Handler(BaseHTTPRequestHandler):
 
                 if q is None:
                     self.send_response(301)
-                    self.send_header('Location', '/restaurants/edit_err')
+                    self.send_header('Location', '/restaurants/not_found')
                     self.end_headers()
 
                 if q is not None:
@@ -92,6 +92,47 @@ class Handler(BaseHTTPRequestHandler):
                             <input name="new_name">
                         </label>
                         <button type="submit">Submit!</button>
+                    </form>
+                    </body>
+                    </html>
+                    '''.format(params['name'][0], params['id'][0])
+
+                    self.wfile.write(output.encode())
+
+
+            if self.path.find("/delete?name=") != -1:
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                parsed = urlparse(self.path)
+                params = parse_qs(parsed.query)
+
+                print("params={}, parsed={}".format(params, parsed))
+
+                #create new SQLAlcehmy session
+                session = create_db_session()
+
+                # query the database and get names of all the restaurants
+                q = session.query(Restaurant).filter(
+                    Restaurant.name == params['name'][0],
+                    Restaurant.Id == params['id'][0]).first()
+                session.close()
+
+                if q is None:
+                    self.send_response(301)
+                    self.send_header('Location', '/restaurants/not_found')
+                    self.end_headers()
+
+                if q is not None:
+                    output = '''
+                    <html>
+                    <body>
+                    <h1>Delete Restaurant</h1>
+                    <form method="POST" action="/restaurant/{1}/delete?name={0}&id={1}">
+                        <label><h2>Are you sure you want to delete {0}?</h2>
+                        </label>
+                        <button type="submit">Delete!</button>
                     </form>
                     </body>
                     </html>
